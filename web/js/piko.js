@@ -131,7 +131,7 @@ function checkCollisions(body1, body2){
 var RObjects
 function addRandomObject() {
   var object_id = ~~(Math.random() * 3 + 1)
-  RObject = game.add.sprite(game.width * 0.25, game.height * 0.5, 'object_' + object_id);
+  RObject = game.add.sprite(game.width * 0.51, game.height * 0.2, 'object_' + object_id);
   game.physics.p2.enable([RObject], isDebug);
 
   RObject.body.clearShapes();
