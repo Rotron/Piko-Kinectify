@@ -76,21 +76,19 @@ function create() {
 
   //  Enable parts for physics. This creates a default rectangular body.
   game.physics.p2.enable([Piko.body, Piko.head, Piko.legLeft, Piko.legRight, Piko.handLeft, Piko.handRight, Piko.ground], isDebug);
+
+  // Make ground static
   Piko.ground.body.static = true;
 
+  // Add custom shapes
   Piko.body.body.clearShapes();
-  // Piko.body.body.loadPolygon('physicsData', 'body');
-
+  Piko.body.body.loadPolygon('physicsData', 'body_s');
   Piko.head.body.clearShapes();
   Piko.head.body.loadPolygon('physicsData', 'head_s')
   Piko.legLeft.body.clearShapes();
   Piko.legLeft.body.loadPolygon('physicsData', 'member_s')
   Piko.legRight.body.clearShapes();
   Piko.legRight.body.loadPolygon('physicsData', 'member_s')
-
-  //  So they don't collide with each other
-  // Piko.body.body.clearCollision(true, true);
-  // Piko.head.body.clearCollision(true, true);
 
   Piko.c.constraintHead = game.physics.p2.createRevoluteConstraint(Piko.body, [0, -pikoS.bodyHeightFull * 0.5], Piko.head, [0, pikoS.headHeight * 0.5 + pikoS.neck]);
   setRevolutionLimits(Piko.c.constraintHead, 0)
@@ -105,19 +103,26 @@ function create() {
   Piko.c.constraintLegRight = game.physics.p2.createRevoluteConstraint(Piko.body, [pikoS.legDistance, pikoS.bodyHeightFull * 0.5], Piko.legRight, [0, 0]);
   setRevolutionLimits(Piko.c.constraintLegRight, Math.PI / 2, 0)
 
-  //  Create our spring
-  //  The parameters are: createSpring(sprite1, sprite2, restLength, stiffness, damping, worldA, worldB, localA, localB)
-  //  See the docs for more details
+  // Spring parameters: createSpring(sprite1, sprite2, restLength, stiffness, damping, worldA, worldB, localA, localB)
   Piko.legsSpring = game.physics.p2.createSpring(Piko.legLeft, Piko.legRight, handXDisplacement * 2, 4, 1, null, null, [0, handYDisplacementConstraint], [0, handYDisplacementConstraint]);
 
-  // var constraintHandLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [-pikoS.bodyWidth / 2 + pikoS.handWidth, handYDisplacement], Piko.handLeft, [0, -pikoS.handLength * 0.5 + pikoS.handWidth * 0.5]);
   Piko.c.constraintHandLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [-handXDisplacement, handYDisplacement], Piko.handLeft, [0, handYDisplacementConstraint]);
   setRevolutionLimits(Piko.c.constraintHandLeft, Math.PI / 6)
   Piko.c.constraintHandRight = game.physics.p2.createRevoluteConstraint(Piko.body, [+handXDisplacement, handYDisplacement], Piko.handRight, [0, handYDisplacementConstraint]);
   setRevolutionLimits(Piko.c.constraintHandRight, -Math.PI / 6)
 
-  Piko.body.bringToTop()
+  if (!isDebug) Piko.body.bringToTop()
   // Piko.body.body.rotateLeft(45)
+
+  game.physics.p2.setPostBroadphaseCallback(checkCollisions, this);
+}
+
+function checkCollisions(body1, body2){
+  if ((body1.sprite.key === 'body' && body2.sprite.key === 'member') || (body2.sprite.key === 'body' && body1.sprite.key === 'member')) {
+    return false;
+  }
+
+  return true;
 }
 
 var leftHandLastRotation = Math.PI / 6
