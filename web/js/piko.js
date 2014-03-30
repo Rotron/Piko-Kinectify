@@ -1,6 +1,3 @@
-console.log('1')
-
-
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render })
   , isDebug = false
   , isConsole = false
@@ -44,6 +41,10 @@ function preload() {
   game.load.image('head', 'assets/head_s.png');
   game.load.image('member', 'assets/member_s.png');
   game.load.image('ground', 'assets/ground.png');
+
+  game.load.image('object_1', 'assets/object_1.png');
+  game.load.image('object_2', 'assets/object_2.png');
+  game.load.image('object_3', 'assets/object_3.png');
 
   game.load.physics('physicsData', 'assets/physics.json')
 }
@@ -114,6 +115,8 @@ function create() {
   if (!isDebug) Piko.body.bringToTop()
   // Piko.body.body.rotateLeft(45)
 
+  setTimeout(addRandomObject, 3000)
+
   game.physics.p2.setPostBroadphaseCallback(checkCollisions, this);
 }
 
@@ -123,6 +126,16 @@ function checkCollisions(body1, body2){
   }
 
   return true;
+}
+
+var RObjects
+function addRandomObject() {
+  var object_id = ~~(Math.random() * 3 + 1)
+  RObject = game.add.sprite(game.width * 0.25, game.height * 0.5, 'object_' + object_id);
+  game.physics.p2.enable([RObject], isDebug);
+
+  RObject.body.clearShapes();
+  RObject.body.loadPolygon('physicsData', 'object_' + object_id);
 }
 
 var leftHandLastRotation = Math.PI / 6
