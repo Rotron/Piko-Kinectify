@@ -40,10 +40,12 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create
   }
 
 function preload() {
-  game.load.image('body', 'images/body_s.png');
-  game.load.image('head', 'images/head_s.png');
-  game.load.image('member', 'images/member_s.png');
-  game.load.image('ground', 'images/ground.png');
+  game.load.image('body', 'assets/body_s.png');
+  game.load.image('head', 'assets/head_s.png');
+  game.load.image('member', 'assets/member_s.png');
+  game.load.image('ground', 'assets/ground.png');
+
+  game.load.physics('physicsData', 'assets/physics.json')
 }
 
 function create() {
@@ -79,6 +81,13 @@ function create() {
   Piko.body.body.clearShapes();
   // Piko.body.body.loadPolygon('physicsData', 'body');
 
+  Piko.head.body.clearShapes();
+  Piko.head.body.loadPolygon('physicsData', 'head_s')
+  Piko.legLeft.body.clearShapes();
+  Piko.legLeft.body.loadPolygon('physicsData', 'member_s')
+  Piko.legRight.body.clearShapes();
+  Piko.legRight.body.loadPolygon('physicsData', 'member_s')
+
   //  So they don't collide with each other
   // Piko.body.body.clearCollision(true, true);
   // Piko.head.body.clearCollision(true, true);
@@ -99,7 +108,7 @@ function create() {
   //  Create our spring
   //  The parameters are: createSpring(sprite1, sprite2, restLength, stiffness, damping, worldA, worldB, localA, localB)
   //  See the docs for more details
-  Piko.legsSpring = game.physics.p2.createSpring(Piko.legLeft, Piko.legRight, handXDisplacement * 2, 1, 1, null, null, [0, handYDisplacementConstraint], [0, handYDisplacementConstraint]);
+  Piko.legsSpring = game.physics.p2.createSpring(Piko.legLeft, Piko.legRight, handXDisplacement * 2, 4, 1, null, null, [0, handYDisplacementConstraint], [0, handYDisplacementConstraint]);
 
   // var constraintHandLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [-pikoS.bodyWidth / 2 + pikoS.handWidth, handYDisplacement], Piko.handLeft, [0, -pikoS.handLength * 0.5 + pikoS.handWidth * 0.5]);
   Piko.c.constraintHandLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [-handXDisplacement, handYDisplacement], Piko.handLeft, [0, handYDisplacementConstraint]);
