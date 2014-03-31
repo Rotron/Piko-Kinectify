@@ -2,7 +2,7 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create
   , isDebug = false
   , isConsole = false
   , spriteScale = 300/13.8 // 21.74
-  , Piko = {c:{}} // Body parts
+  , Piko = {c:{}, s:{rotationStep: Math.PI / 180}} // Body parts, constraints, settings
   , piko = { // Pico settings
       bodyWidth: 6.2
     , bodyHeightFull: 8.4 // 183
@@ -64,14 +64,14 @@ function create() {
   Piko.body = game.add.sprite(pikoS.center.x, pikoS.center.y, 'body');
   Piko.head = game.add.sprite(pikoS.center.x, pikoS.center.y - (pikoS.bodyHeightFull * 0.5 + pikoS.neck + pikoS.headHeight * 0.5), 'head')
   // Add legs
-  Piko.legLeft = game.add.sprite(pikoS.center.x - pikoS.legDistance, pikoS.center.y + pikoS.bodyHeightFull * 0.5, 'member')
-  Piko.legRight = game.add.sprite(pikoS.center.x + pikoS.legDistance, pikoS.center.y + pikoS.bodyHeightFull * 0.5, 'member')
+  Piko.legLeft = game.add.sprite(pikoS.center.x + pikoS.legDistance, pikoS.center.y + pikoS.bodyHeightFull * 0.5, 'member')
+  Piko.legRight = game.add.sprite(pikoS.center.x - pikoS.legDistance, pikoS.center.y + pikoS.bodyHeightFull * 0.5, 'member')
   // Add hands
   var handYDisplacement = -pikoS.bodyHeightFull * 0.5 + pikoS.bodyRadii
     , handYDisplacementConstraint = -pikoS.handLength * 0.5 + pikoS.handWidth * 0.5
     , handXDisplacement = pikoS.bodyWidth / 2 - pikoS.handWidth * 0.5
-  Piko.handLeft = game.add.sprite(pikoS.center.x - handXDisplacement, pikoS.center.y + handYDisplacement - handYDisplacementConstraint, 'member')
-  Piko.handRight = game.add.sprite(pikoS.center.x + handXDisplacement, pikoS.center.y + handYDisplacement - handYDisplacementConstraint, 'member')
+  Piko.handLeft = game.add.sprite(pikoS.center.x + handXDisplacement, pikoS.center.y + handYDisplacement - handYDisplacementConstraint, 'member')
+  Piko.handRight = game.add.sprite(pikoS.center.x - handXDisplacement, pikoS.center.y + handYDisplacement - handYDisplacementConstraint, 'member')
 
   Piko.ground = game.add.sprite(game.width / 2, game.height - 10, 'ground')
 
@@ -92,25 +92,27 @@ function create() {
   Piko.legRight.body.loadPolygon('physicsData', 'member_s')
 
   Piko.c.constraintHead = game.physics.p2.createRevoluteConstraint(Piko.body, [0, -pikoS.bodyHeightFull * 0.5], Piko.head, [0, pikoS.headHeight * 0.5 + pikoS.neck]);
-  setRevolutionLimits(Piko.c.constraintHead, 0)
-
-  //  Modify a few body properties
-  // sprite.body.setZeroDamping();
-  // sprite.body.fixedRotation = true;
+  Piko.c.constraintHead.rotated = 0 // cache rotation constraint
+  Piko.c.constraintHead.limits = [-Math.PI * 0.2, Math.PI * 0.2] // cache rotation limits
+  setRevolutionLimits(Piko.c.constraintHead, Piko.c.constraintHead.rotated)
 
   // var constraintLegLeft = game.physics.p2.createLockConstraint(Piko.body, Piko.legLeft, [0, 0], 0);
-  Piko.c.constraintLegLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [-pikoS.legDistance, pikoS.bodyHeightFull * 0.5], Piko.legLeft, [0, 0]);
-  setRevolutionLimits(Piko.c.constraintLegLeft, 0, -Math.PI / 2)
-  Piko.c.constraintLegRight = game.physics.p2.createRevoluteConstraint(Piko.body, [pikoS.legDistance, pikoS.bodyHeightFull * 0.5], Piko.legRight, [0, 0]);
-  setRevolutionLimits(Piko.c.constraintLegRight, Math.PI / 2, 0)
+  Piko.c.constraintLegLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [pikoS.legDistance, pikoS.bodyHeightFull * 0.5], Piko.legLeft, [0, 0]);
+  setRevolutionLimits(Piko.c.constraintLegLeft, Math.PI / 2, 0)
+  Piko.c.constraintLegRight = game.physics.p2.createRevoluteConstraint(Piko.body, [-pikoS.legDistance, pikoS.bodyHeightFull * 0.5], Piko.legRight, [0, 0]);
+  setRevolutionLimits(Piko.c.constraintLegRight, 0, -Math.PI / 2)
 
   // Spring parameters: createSpring(sprite1, sprite2, restLength, stiffness, damping, worldA, worldB, localA, localB)
   Piko.legsSpring = game.physics.p2.createSpring(Piko.legLeft, Piko.legRight, handXDisplacement * 2, 4, 1, null, null, [0, handYDisplacementConstraint], [0, handYDisplacementConstraint]);
 
-  Piko.c.constraintHandLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [-handXDisplacement, handYDisplacement], Piko.handLeft, [0, handYDisplacementConstraint]);
-  setRevolutionLimits(Piko.c.constraintHandLeft, Math.PI / 6)
-  Piko.c.constraintHandRight = game.physics.p2.createRevoluteConstraint(Piko.body, [+handXDisplacement, handYDisplacement], Piko.handRight, [0, handYDisplacementConstraint]);
-  setRevolutionLimits(Piko.c.constraintHandRight, -Math.PI / 6)
+  Piko.c.constraintHandLeft = game.physics.p2.createRevoluteConstraint(Piko.body, [+handXDisplacement, handYDisplacement], Piko.handLeft, [0, handYDisplacementConstraint]);
+  Piko.c.constraintHandLeft.rotated = -Math.PI / 6
+  Piko.c.constraintHandLeft.limits = [ -Math.PI * 0.8, -Math.PI / 6]
+  setRevolutionLimits(Piko.c.constraintHandLeft, Piko.c.constraintHandLeft.rotated)
+  Piko.c.constraintHandRight = game.physics.p2.createRevoluteConstraint(Piko.body, [-handXDisplacement, handYDisplacement], Piko.handRight, [0, handYDisplacementConstraint]);
+  Piko.c.constraintHandRight.rotated = Math.PI / 6
+  Piko.c.constraintHandRight.limits = [Math.PI / 6, Math.PI * 0.8]
+  setRevolutionLimits(Piko.c.constraintHandRight, Piko.c.constraintHandRight.rotated)
 
   if (!isDebug) Piko.body.bringToTop()
   // Piko.body.body.rotateLeft(45)
@@ -138,47 +140,95 @@ function addRandomObject() {
   RObject.body.loadPolygon('physicsData', 'object_' + object_id);
 }
 
-var leftHandLastRotation = Math.PI / 6
-  , rightHandLastRotation = -Math.PI / 6
-  , headLastRotation = 0
-  , rotationStep = Math.PI / 180
+// Apply rotation limits
+function rotateObject(obj) {
+  if (obj.rotated < -Math.PI) obj.rotated += Math.PI * 2
+  if (obj.rotated > Math.PI) obj.rotated -= Math.PI * 2
+
+  if (obj.rotated < obj.limits[0] || obj.rotated > obj.limits[1]) {
+    if (Math.abs(obj.rotated - obj.limits[0]) < Math.abs(obj.rotated - obj.limits[1])) {
+      obj.rotated = obj.limits[0]
+    } else {
+      obj.rotated = obj.limits[1]
+    }
+  }
+
+  setRevolutionLimits(obj, obj.rotated)
+}
 
 function update() {
   // Check key states every frame.
   if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-    // Left hand down
-    leftHandLastRotation -= rotationStep
-    setRevolutionLimits(Piko.c.constraintHandLeft, leftHandLastRotation)
-    if(isConsole) console.log('left down', leftHandLastRotation)
+    // Right hand down
+    Piko.c.constraintHandRight.rotated += Piko.s.rotationStep
   } else if (game.input.keyboard.isDown(Phaser.Keyboard.Q)) {
-    // Left hand up
-    leftHandLastRotation += rotationStep
-    setRevolutionLimits(Piko.c.constraintHandLeft, leftHandLastRotation)
-    if(isConsole) console.log('left up', leftHandLastRotation)
+    // Right hand up
+    Piko.c.constraintHandRight.rotated -= Piko.s.rotationStep
   } else if (game.input.keyboard.isDown(Phaser.Keyboard.R)) {
     // Head left
-    headLastRotation -= rotationStep
-    setRevolutionLimits(Piko.c.constraintHead, headLastRotation)
-    if(isConsole) console.log('head left', headLastRotation)
+    Piko.c.constraintHead.rotated -= Piko.s.rotationStep
   } else if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
     // Head right
-    headLastRotation += rotationStep
-    setRevolutionLimits(Piko.c.constraintHead, headLastRotation)
-    if(isConsole) console.log('head left', headLastRotation)
+    Piko.c.constraintHead.rotated += Piko.s.rotationStep
   } else if (game.input.keyboard.isDown(Phaser.Keyboard.T)) {
-    // Right hand down
-    rightHandLastRotation += rotationStep
-    setRevolutionLimits(Piko.c.constraintHandRight, rightHandLastRotation)
-    if(isConsole) console.log('right down', rightHandLastRotation)
+    // Left hand down
+    Piko.c.constraintHandLeft.rotated += Piko.s.rotationStep
   } else if (game.input.keyboard.isDown(Phaser.Keyboard.P)) {
-    // Right hand up
-    rightHandLastRotation -= rotationStep
-    setRevolutionLimits(Piko.c.constraintHandRight, rightHandLastRotation)
-    if(isConsole) console.log('right up', rightHandLastRotation)
+    // Left hand up
+    Piko.c.constraintHandLeft.rotated -= Piko.s.rotationStep
   } else {
     //
   }
+
+  rotateObject(Piko.c.constraintHandLeft)
+  rotateObject(Piko.c.constraintHandRight)
+  rotateObject(Piko.c.constraintHead)
 }
+
+/*{
+  "head": {},
+  "neck": {},
+  "torso": {},
+  "left_shoulder": {},
+  "left_elbow": {},
+  "left_hand": {},
+  "left_hip": {},
+  "left_knee": {},
+  "left_foot": {},
+  "right_shoulder": {},
+  "right_elbow": {},
+  "right_hand": {},
+  "right_hip": {},
+  "right_knee": {},
+  "right_foot": {}
+}*/
+
+function angleBetweenLinesAsPoints(p11, p12, p21, p22) {
+  var angle1 = Math.atan2(p11.y - p12.y, p11.x - p12.x);
+  var angle2 = Math.atan2(p21.y - p22.y, p21.x - p22.x);
+  return angle1-angle2;
+}
+
+function angleBetween3Points(p1, p2, p3) {
+  return angleBetweenLinesAsPoints(p1, p2, p2, p3)
+}
+
+O.add('kinect', function(obj){
+  if (!Piko.body) return; // do not process until we have Piko body parts
+
+  if (+obj.player === 1) {
+    Piko.c.constraintHandLeft.rotated = -angleBetween3Points(obj.left_shoulder, obj.right_shoulder, obj.right_elbow) - Math.PI * 0.5
+    Piko.c.constraintHandRight.rotated = -angleBetween3Points(obj.right_shoulder, obj.left_shoulder, obj.left_elbow) + Math.PI * 0.5
+    if(obj.neck !== undefined) {
+      // Neck is very unstable
+      var a = Math.atan2((obj.left_shoulder.y + obj.right_shoulder.y) * 0.5 - obj.neck.y, (obj.left_shoulder.x + obj.right_shoulder.x) * 0.5 - obj.neck.x)
+      if (a < -Math.PI * 0.5) a += Math.PI
+      if (a > Math.PI * 0.5) a -= Math.PI
+
+      Piko.c.constraintHead.rotated = a
+    }
+  }
+})
 
 function render() {
 
