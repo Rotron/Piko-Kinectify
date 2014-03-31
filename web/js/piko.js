@@ -217,11 +217,11 @@ O.add('kinect', function(obj){
   if (!Piko.body) return; // do not process until we have Piko body parts
 
   if (+obj.player === 1) {
-    Piko.c.constraintHandLeft.rotated = -angleBetween3Points(obj.left_shoulder, obj.right_shoulder, obj.right_elbow) - Math.PI * 0.5
-    Piko.c.constraintHandRight.rotated = -angleBetween3Points(obj.right_shoulder, obj.left_shoulder, obj.left_elbow) + Math.PI * 0.5
+    Piko.c.constraintHandLeft.rotated = angleBetween3Points(obj.left_shoulder, obj.right_shoulder, obj.right_elbow) - Math.PI * 0.5
+    Piko.c.constraintHandRight.rotated = angleBetween3Points(obj.right_shoulder, obj.left_shoulder, obj.left_elbow) + Math.PI * 0.5
     if(obj.neck !== undefined) {
       // Neck is very unstable
-      var a = Math.atan2((obj.left_shoulder.y + obj.right_shoulder.y) * 0.5 - obj.neck.y, (obj.left_shoulder.x + obj.right_shoulder.x) * 0.5 - obj.neck.x)
+      var a = -Math.atan2((obj.left_shoulder.y + obj.right_shoulder.y) * 0.5 - obj.neck.y, (obj.left_shoulder.x + obj.right_shoulder.x) * 0.5 - obj.neck.x)
       if (a < -Math.PI * 0.5) a += Math.PI
       if (a > Math.PI * 0.5) a -= Math.PI
 
