@@ -195,6 +195,11 @@ function update() {
   } else if (game.input.keyboard.isDown(Phaser.Keyboard.V)) {
     // Left leg right
     Piko.c.constraintLegLeft.rotated -= Piko.s.rotationStep
+  } else if (game.input.keyboard.isDown(Phaser.Keyboard.J)) {
+    // Jump
+    if (Piko.body.body.data.angle > -Math.PI / 4 && Piko.body.body.data.angle < Math.PI / 4) {
+      Piko.body.body.velocity.y = -400;
+    }
   } else {
     //
   }
@@ -241,8 +246,37 @@ function angleByHorizont(p1, p2, fallback) {
   return Math.atan2(p1.y - p2.y, p1.x - p2.x);
 }
 
+var heightLimits = []
+  , heightQueueLimit = 10
+  , prevMax = 0
+function recordHeight(obj) {
+  // Remove oldest height limits is limit reached
+  if (heightLimits.length + 1 > heightQueueLimit) heightLimits.shift();
+  heightLimits.push((obj.left_shoulder.y + obj.right_shoulder.y + obj.left_shoulder.y + obj.right_shoulder.y) * 0.25)
+}
+function checkForJump() {
+  if (heightLimits.length == heightQueueLimit) {
+    var min = heightLimits.reduce(function(prev, curr){return Math.min(prev, curr)}, heightLimits[0])
+    var max = heightLimits.reduce(function(prev, curr){return Math.max(prev, curr)}, heightLimits[0])
+
+    // Previous max should be lower as Y axis is inverse
+    if (max - min > 80 && max < prevMax) {
+      console.log(max, min)
+      Piko.body.body.velocity.y = -800 - (max - min)*5;
+      console.log(-800 - (max - min)*5)
+      heightLimits = []
+    }
+
+    // Store previous max so we can check if we jumped up or down
+    prevMax = max
+  }
+}
+
 O.add('kinect', function(obj){
   if (!Piko.body) return; // do not process until we have Piko body parts
+
+  recordHeight(obj)
+  checkForJump()
 
   if (+obj.player === 1 || true) {
     Piko.c.constraintHandLeft.rotated = angleBetween3Points(obj.left_shoulder, obj.right_shoulder, obj.right_elbow, Piko.c.constraintHandLeft.rotated) - Math.PI * 0.5
