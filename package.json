@@ -1,0 +1,17 @@
+{
+  "name": "Piko-Kinectify",
+  "version": "1.0.0",
+  "description": "Piko controlled by Kinect",
+  "main": "Gruntfile.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bumbu/Piko-Kinectify.git"
+  },
+  "author": "bumbu",
+  "devDependencies": {
+    "grunt": "~0.4.4",
+    "grunt-contrib-watch": "~0.6.1",
+    "browserify": "~3.38.0",
+    "grunt-browserify": "~2.0.1"
+  }
+}
