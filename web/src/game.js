@@ -1,5 +1,6 @@
 var settings = require('./settings')
 var S = settings
+var O = require('./observer')
 
 // Singleton
 module.exports = function(){
@@ -37,7 +38,33 @@ module.exports = function(){
 
       game.physics.p2.setPostBroadphaseCallback(publicObject.checkCollisions, this);
     }
-  , update: function(){}
+  , update: function(){
+      if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+        O.trigger('keyboard-a', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.Q)) {
+        O.trigger('keyboard-q', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.R)) {
+        O.trigger('keyboard-r', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+        O.trigger('keyboard-s', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.T)) {
+        O.trigger('keyboard-t', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.P)) {
+        O.trigger('keyboard-p', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.Z)) {
+        O.trigger('keyboard-z', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.X)) {
+        O.trigger('keyboard-x', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.C)) {
+        O.trigger('keyboard-c', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.V)) {
+        O.trigger('keyboard-v', true)
+      } else if (game.input.keyboard.isDown(Phaser.Keyboard.J)) {
+        O.trigger('keyboard-j', true)
+      }
+
+      O.trigger('update', true)
+    }
   , render: function(){}
 
   // Bodies

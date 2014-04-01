@@ -1,5 +1,6 @@
 var Settings = require('./settings')
   , S = Settings
+  , O = require('./observer')
 
 var Piko = function(game, id, x, y){
   this.init(game, id, x, y)
@@ -29,6 +30,9 @@ Piko.prototype.init = function(game, id, x, y){
   this.addConstraintHandRight()
   this.addConstraintLegLeft()
   this.addConstraintLegRight()
+
+  this.hookKeyboard()
+  this.hookUpdate()
 
   this.game.registerBody(this)
 
@@ -160,6 +164,54 @@ Piko.prototype.addConstraintLegRight = function(){
   , -Math.PI / 4
   , Math.PI /4
   )
+}
+
+Piko.prototype.hookKeyboard = function(){
+  var that = this
+
+  O.add('keyboard-a', function(){that.c.handRight.rotated += that.s.rotationStep}) // down
+  O.add('keyboard-q', function(){that.c.handRight.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-r', function(){that.c.head.rotated -= that.s.rotationStep}) // left
+  O.add('keyboard-s', function(){that.c.head.rotated += that.s.rotationStep}) // right
+  O.add('keyboard-t', function(){that.c.handLeft.rotated += that.s.rotationStep}) // down
+  O.add('keyboard-p', function(){that.c.handLeft.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-z', function(){that.c.legRight.rotated += that.s.rotationStep}) // left
+  O.add('keyboard-x', function(){that.c.legRight.rotated -= that.s.rotationStep}) // right
+  O.add('keyboard-c', function(){that.c.legLeft.rotated += that.s.rotationStep}) // left
+  O.add('keyboard-v', function(){that.c.legLeft.rotated -= that.s.rotationStep}) // right
+  O.add('keyboard-j', function(){
+    // Jump
+    if (that.bp.body.body.data.angle > -Math.PI / 4 && that.bp.body.body.data.angle < Math.PI / 4) {
+      that.bp.body.body.velocity.y = -400;
+    }
+  })
+}
+
+Piko.prototype.hookUpdate = function(){
+  var that = this
+
+  O.add('update', function(){
+    that.rotateObject(that.c.handLeft)
+    that.rotateObject(that.c.handRight)
+    that.rotateObject(that.c.legLeft)
+    that.rotateObject(that.c.legRight)
+    that.rotateObject(that.c.head)
+  })
+}
+
+Piko.prototype.rotateObject = function(obj) {
+  if (obj.rotated < -Math.PI) obj.rotated += Math.PI * 2
+  if (obj.rotated > Math.PI) obj.rotated -= Math.PI * 2
+
+  if (obj.rotated < obj.limits[0] || obj.rotated > obj.limits[1]) {
+    if (Math.abs(obj.rotated - obj.limits[0]) < Math.abs(obj.rotated - obj.limits[1])) {
+      obj.rotated = obj.limits[0]
+    } else {
+      obj.rotated = obj.limits[1]
+    }
+  }
+
+  this.setRevolutionLimits(obj, obj.rotated)
 }
 
 module.exports = Piko

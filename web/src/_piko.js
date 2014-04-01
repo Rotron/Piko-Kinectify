@@ -1,4 +1,3 @@
-* Add keyboard controls
 * Add kinect controls
 * If kinect not connected: load one piko
 * If kinect connected: load piko only when player detected
@@ -25,87 +24,6 @@ function addRandomObject() {
   RObject.body.loadPolygon('physicsData', 'object_' + object_id);
 }
 
-// Apply rotation limits
-function rotateObject(obj) {
-  if (obj.rotated < -Math.PI) obj.rotated += Math.PI * 2
-  if (obj.rotated > Math.PI) obj.rotated -= Math.PI * 2
-
-  if (obj.rotated < obj.limits[0] || obj.rotated > obj.limits[1]) {
-    if (Math.abs(obj.rotated - obj.limits[0]) < Math.abs(obj.rotated - obj.limits[1])) {
-      obj.rotated = obj.limits[0]
-    } else {
-      obj.rotated = obj.limits[1]
-    }
-  }
-
-  setRevolutionLimits(obj, obj.rotated)
-}
-
-function update() {
-  // Check key states every frame.
-  if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-    // Right hand down
-    Piko.c.constraintHandRight.rotated += Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.Q)) {
-    // Right hand up
-    Piko.c.constraintHandRight.rotated -= Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.R)) {
-    // Head left
-    Piko.c.constraintHead.rotated -= Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.S)) {
-    // Head right
-    Piko.c.constraintHead.rotated += Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.T)) {
-    // Left hand down
-    Piko.c.constraintHandLeft.rotated += Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.P)) {
-    // Left hand up
-    Piko.c.constraintHandLeft.rotated -= Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.Z)) {
-    // Right leg left
-    Piko.c.constraintLegRight.rotated += Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.X)) {
-    // Right leg right
-    Piko.c.constraintLegRight.rotated -= Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.C)) {
-    // Left leg left
-    Piko.c.constraintLegLeft.rotated += Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.V)) {
-    // Left leg right
-    Piko.c.constraintLegLeft.rotated -= Piko.s.rotationStep
-  } else if (game.input.keyboard.isDown(Phaser.Keyboard.J)) {
-    // Jump
-    if (Piko.body.body.data.angle > -Math.PI / 4 && Piko.body.body.data.angle < Math.PI / 4) {
-      Piko.body.body.velocity.y = -400;
-    }
-  } else {
-    //
-  }
-
-  rotateObject(Piko.c.constraintHandLeft)
-  rotateObject(Piko.c.constraintHandRight)
-  rotateObject(Piko.c.constraintLegLeft)
-  rotateObject(Piko.c.constraintLegRight)
-  rotateObject(Piko.c.constraintHead)
-}
-
-/*{
-  "head": {},
-  "neck": {},
-  "torso": {},
-  "left_shoulder": {},
-  "left_elbow": {},
-  "left_hand": {},
-  "left_hip": {},
-  "left_knee": {},
-  "left_foot": {},
-  "right_shoulder": {},
-  "right_elbow": {},
-  "right_hand": {},
-  "right_hip": {},
-  "right_knee": {},
-  "right_foot": {}
-}*/
 
 function angleBetweenLinesAsPoints(p11, p12, p21, p22, fallback) {
   if(!p11 || !p12 || !p21 || !p22) return fallback;
