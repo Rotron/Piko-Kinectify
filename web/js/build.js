@@ -38,6 +38,8 @@ module.exports = function(){
       publicObject.ground.body.static = true; // Make ground static
 
       game.physics.p2.setPostBroadphaseCallback(publicObject.checkCollisions, this);
+
+      O.trigger('game-created', true)
     }
   , update: function(){
       if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
@@ -106,17 +108,41 @@ var O = require('./observer') // Singleton object. Events handling
 var Kinect = require('./kinect') // Singleton object
 var Piko = require('./piko') // Constructor object
 
+// Wait both for kinect and game
+var kinect_opened = false
+  , game_created = false
+  , processKinect = function(){
+      if(!kinect_opened || !game_created) return;
+
+      var players = {}
+
+      O.add('kinect-message', function(data){
+        if (!players.hasOwnProperty(data.player)) {
+          // Create new player
+          players[data.player] = new Piko(Game, data.player, data.right_shoulder.x || 400, 500 - data.right_shoulder.y || 300)
+        }
+
+        players[data.player].processKinect(data)
+      })
+    }
+O.add('kinect-opened', function(){
+  kinect_opened = true
+  processKinect()
+})
+O.add('game-created', function(){
+  game_created = true
+  processKinect()
+})
+
 Kinect.connect()
-setTimeout(function(){console.log(Kinect.isConnected())}, 2000)
 
+// Wait for 10 seconds, if kinect not found that add a Piko
 setTimeout(function(){
-  var Player1 = new Piko(Game, 1, 200, 300)
-  var Player2 = new Piko(Game, 2, 600, 300)
-
-  // var Player1 = new Piko(Game, 1, 600, 400)
-  // var Player2 = new Piko(Game, 2, 600, 200)
-}, 1000)
-
+  if (!Kinect.isConnected()) {
+    var Player1 = new Piko(Game, 1, 400, 300)
+    console.log('Adding autonome player')
+  }
+}, 10000)
 
 },{"./game":1,"./kinect":3,"./observer":4,"./piko":5,"./settings":6}],3:[function(require,module,exports){
 var Settings = require('./settings')
@@ -201,9 +227,11 @@ Piko.prototype.init = function(game, id, x, y){
   , handYDisplacement: -S.pikoS.bodyHeightFull * 0.5 + S.pikoS.bodyRadii
   , handYDisplacementConstraint: -S.pikoS.handLength * 0.5 + S.pikoS.handWidth * 0.5
   , handXDisplacement: S.pikoS.bodyWidth / 2 - S.pikoS.handWidth * 0.5
+  , heightQueueLimit: 10
   }
   this.bp = {} // Body parts
   this.c = {} // Constraints
+  this.h = {heights: [], prevMaxHeight: 0} // Cache
 
   this.addBody()
   this.addHead()
@@ -397,6 +425,78 @@ Piko.prototype.rotateObject = function(obj) {
   }
 
   this.setRevolutionLimits(obj, obj.rotated)
+}
+
+function angleBetweenLinesAsPoints(p11, p12, p21, p22, fallback) {
+  if(!p11 || !p12 || !p21 || !p22) return fallback;
+
+  var angle1 = Math.atan2(p11.y - p12.y, p11.x - p12.x);
+  var angle2 = Math.atan2(p21.y - p22.y, p21.x - p22.x);
+  return angle1-angle2;
+}
+
+function angleBetween3Points(p1, p2, p3, fallback) {
+  return angleBetweenLinesAsPoints(p1, p2, p2, p3, fallback)
+}
+
+function angleByHorizont(p1, p2, fallback) {
+  if(!p1 || !p2) return fallback;
+  return Math.atan2(p1.y - p2.y, p1.x - p2.x);
+}
+
+Piko.prototype.processKinect = function(data){
+  // Hands
+  this.c.handLeft.rotated = angleBetween3Points(data.left_shoulder, data.right_shoulder, data.right_elbow, this.c.handLeft.rotated) - Math.PI * 0.5
+  this.c.handRight.rotated = angleBetween3Points(data.right_shoulder, data.left_shoulder, data.left_elbow, this.c.handLeft.rotated) + Math.PI * 0.5
+
+  // Legs
+  this.c.legLeft.rotated = -angleByHorizont(data.right_hip, data.right_foot, this.c.legLeft.rotated) - Math.PI * 0.5
+  this.c.legRight.rotated = -angleByHorizont(data.left_hip, data.left_foot, this.c.legRight.rotated) - Math.PI * 0.5
+
+  // Head
+  if(data.neck !== undefined) {
+    // Neck is very unstable
+    var a = -Math.atan2((data.left_shoulder.y + data.right_shoulder.y) * 0.5 - data.neck.y, (data.left_shoulder.x + data.right_shoulder.x) * 0.5 - data.neck.x)
+    if (a < -Math.PI * 0.5) a += Math.PI
+    if (a > Math.PI * 0.5) a -= Math.PI
+
+    this.c.head.rotated = a
+  }
+
+  this.recordHeight(data)
+  var h
+  if(h = this.jumpHeight() > 0){
+    console.log(h)
+    this.bp.body.body.velocity.y = -800 - h*5;
+  }
+}
+
+
+Piko.prototype.recordHeight = function(data) {
+  // Remove oldest height limits is limit reached
+  if (this.h.heights.length + 1 > this.s.heightQueueLimit) this.h.heights.shift();
+
+  this.h.heights.push((data.left_shoulder.y + data.right_shoulder.y + data.left_shoulder.y + data.right_shoulder.y) * 0.25)
+}
+
+Piko.prototype.jumpHeight = function() {
+  // Check only if we have history data
+  if (this.h.heights.length == this.s.heightQueueLimit) {
+    var min = this.h.heights.reduce(function(prev, curr){return Math.min(prev, curr)}, this.h.heights[0])
+    var max = this.h.heights.reduce(function(prev, curr){return Math.max(prev, curr)}, this.h.heights[0])
+
+    // Previous max should be lower as Y axis is inverse
+    if (max - min > 80 && max < this.h.prevMaxHeight) {
+      this.h.heights = [] // reset jumps history
+      this.h.prevMaxHeight = max
+      return max-min
+    }
+
+    // Store previous max so we can check if we jumped up or down
+    this.h.prevMaxHeight = max
+
+    return 0
+  }
 }
 
 module.exports = Piko

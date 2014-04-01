@@ -37,6 +37,8 @@ module.exports = function(){
       publicObject.ground.body.static = true; // Make ground static
 
       game.physics.p2.setPostBroadphaseCallback(publicObject.checkCollisions, this);
+
+      O.trigger('game-created', true)
     }
   , update: function(){
       if (game.input.keyboard.isDown(Phaser.Keyboard.A)) {
