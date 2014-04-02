@@ -75,6 +75,11 @@ module.exports = function(){
   , registerBody: function(body){
       publicObject.bodies.push(body)
     }
+  , unregisterBody: function(body){
+      if (publicObject.bodies.indexOf(body) !== -1) {
+        publicObject.bodies.splice(publicObject.bodies.indexOf(body), 1)
+      }
+    }
   , checkCollisions: function(body1, body2){
       if(body1.pikoId && body2.pikoId && body1.pikoId == body2.pikoId)
         if ((body1.sprite.key === 'body' && body2.sprite.key === 'member') || (body2.sprite.key === 'body' && body1.sprite.key === 'member')) {
@@ -93,6 +98,9 @@ module.exports = function(){
     }
   , addRevoluteConstraint: function(b1, p1, b2, p2){
       return game.physics.p2.createRevoluteConstraint(b1, p1, b2, p2)
+    }
+  , removeConstraint: function(c){
+      return game.physics.p2.removeConstraint(c)
     }
   }
 
@@ -117,13 +125,30 @@ var kinect_opened = false
       var players = {}
 
       O.add('kinect-message', function(data){
+        if (!data.player) return;
+
         if (!players.hasOwnProperty(data.player)) {
           // Create new player
-          players[data.player] = new Piko(Game, data.player, data.right_shoulder.x || 400, 500 - data.right_shoulder.y || 300)
+          var x = data.right_shoulder ? data.right_shoulder.x : 400
+          var y = data.right_shoulder ? data.right_shoulder.y : 300
+          players[data.player] = new Piko(Game, data.player, x, y)
         }
 
         players[data.player].processKinect(data)
       })
+
+      // Check players for being alive every 5 seconds
+      setInterval(function(){
+        for(var i in players) {
+          if (players.hasOwnProperty(i)) {
+            if (players[i].shouldDie()) {
+              console.log('Player ' + i + ' should die')
+              players[i].destroy()
+              delete players[i]
+            }
+          }
+        }
+      }, Settings.bodyLifespan)
     }
 O.add('kinect-opened', function(){
   kinect_opened = true
@@ -232,6 +257,8 @@ Piko.prototype.init = function(game, id, x, y){
   this.bp = {} // Body parts
   this.c = {} // Constraints
   this.h = {heights: [], prevMaxHeight: 0} // Cache
+  this.f = {} // Funcions/Callbacks
+  this.lastAlive = Date.now()
 
   this.addBody()
   this.addHead()
@@ -250,6 +277,30 @@ Piko.prototype.init = function(game, id, x, y){
   this.game.registerBody(this)
 
   if (!S.isDebug) this.bp.body.bringToTop()
+}
+
+Piko.prototype.destroy = function(){
+  var i;
+
+  // Remove hooks
+  this.unhookUpdate()
+  this.unhookKeyboard()
+
+  // Remove contraints from P2
+  for (i in this.c) {
+    if (this.c.hasOwnProperty(i)) {
+      this.game.removeConstraint(this.c[i])
+      delete this.c[i]
+    }
+  }
+
+  // Remove bodies from P2
+  for (i in this.bp) {
+    if (this.bp.hasOwnProperty(i)) {
+      this.bp[i].destroy()
+      delete this.bp[i]
+    }
+  }
 }
 
 Piko.prototype.addBody = function(){
@@ -382,34 +433,50 @@ Piko.prototype.addConstraintLegRight = function(){
 Piko.prototype.hookKeyboard = function(){
   var that = this
 
-  O.add('keyboard-a', function(){that.c.handRight.rotated += that.s.rotationStep}) // down
-  O.add('keyboard-q', function(){that.c.handRight.rotated -= that.s.rotationStep}) // up
-  O.add('keyboard-r', function(){that.c.head.rotated -= that.s.rotationStep}) // left
-  O.add('keyboard-s', function(){that.c.head.rotated += that.s.rotationStep}) // right
-  O.add('keyboard-t', function(){that.c.handLeft.rotated += that.s.rotationStep}) // down
-  O.add('keyboard-p', function(){that.c.handLeft.rotated -= that.s.rotationStep}) // up
-  O.add('keyboard-z', function(){that.c.legRight.rotated += that.s.rotationStep}) // left
-  O.add('keyboard-x', function(){that.c.legRight.rotated -= that.s.rotationStep}) // right
-  O.add('keyboard-c', function(){that.c.legLeft.rotated += that.s.rotationStep}) // left
-  O.add('keyboard-v', function(){that.c.legLeft.rotated -= that.s.rotationStep}) // right
-  O.add('keyboard-j', function(){
+  O.add('keyboard-a', this.f.f1 = function(){that.c.handRight.rotated += that.s.rotationStep}) // down
+  O.add('keyboard-q', this.f.f2 = function(){that.c.handRight.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-r', this.f.f3 = function(){that.c.head.rotated -= that.s.rotationStep}) // left
+  O.add('keyboard-s', this.f.f4 = function(){that.c.head.rotated += that.s.rotationStep}) // right
+  O.add('keyboard-t', this.f.f5 = function(){that.c.handLeft.rotated += that.s.rotationStep}) // down
+  O.add('keyboard-p', this.f.f6 = function(){that.c.handLeft.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-z', this.f.f7 = function(){that.c.legRight.rotated += that.s.rotationStep}) // left
+  O.add('keyboard-x', this.f.f8 = function(){that.c.legRight.rotated -= that.s.rotationStep}) // right
+  O.add('keyboard-c', this.f.f9 = function(){that.c.legLeft.rotated += that.s.rotationStep}) // left
+  O.add('keyboard-v', this.f.f10 = function(){that.c.legLeft.rotated -= that.s.rotationStep}) // right
+  O.add('keyboard-j', this.f.f11 = function(){
     // Jump
     if (that.bp.body.body.data.angle > -Math.PI / 4 && that.bp.body.body.data.angle < Math.PI / 4) {
       that.bp.body.body.velocity.y = -400;
     }
   })
 }
+Piko.prototype.unhookKeyboard = function(){
+  O.remove('keyboard-a', this.f.f1)
+  O.remove('keyboard-q', this.f.f2)
+  O.remove('keyboard-r', this.f.f3)
+  O.remove('keyboard-s', this.f.f4)
+  O.remove('keyboard-t', this.f.f5)
+  O.remove('keyboard-p', this.f.f6)
+  O.remove('keyboard-z', this.f.f7)
+  O.remove('keyboard-x', this.f.f8)
+  O.remove('keyboard-c', this.f.f9)
+  O.remove('keyboard-v', this.f.f10)
+  O.remove('keyboard-j', this.f.f11)
+}
 
 Piko.prototype.hookUpdate = function(){
   var that = this
 
-  O.add('update', function(){
+  O.add('update', this.f.u = function(){
     that.rotateObject(that.c.handLeft)
     that.rotateObject(that.c.handRight)
     that.rotateObject(that.c.legLeft)
     that.rotateObject(that.c.legRight)
     that.rotateObject(that.c.head)
   })
+}
+Piko.prototype.unhookUpdate = function(){
+  O.remove('update', this.f.u)
 }
 
 Piko.prototype.rotateObject = function(obj) {
@@ -445,6 +512,8 @@ function angleByHorizont(p1, p2, fallback) {
 }
 
 Piko.prototype.processKinect = function(data){
+  this.lastAlive = Date.now()
+
   // Hands
   this.c.handLeft.rotated = angleBetween3Points(data.left_shoulder, data.right_shoulder, data.right_elbow, this.c.handLeft.rotated) - Math.PI * 0.5
   this.c.handRight.rotated = angleBetween3Points(data.right_shoulder, data.left_shoulder, data.left_elbow, this.c.handLeft.rotated) + Math.PI * 0.5
@@ -499,6 +568,10 @@ Piko.prototype.jumpHeight = function() {
   }
 }
 
+Piko.prototype.shouldDie = function(){
+  return Date.now() - this.lastAlive > S.bodyLifespan;
+}
+
 module.exports = Piko
 
 },{"./observer":4,"./settings":6}],6:[function(require,module,exports){
@@ -507,6 +580,7 @@ Settings = {
 , height: 600
 , isDebug: false
 , spriteScale: 300/13.8 // 21.74
+, bodyLifespan: 5000
 , piko: { // Pico settings
     bodyWidth: 6.2
   , bodyHeightFull: 8.4 // 183

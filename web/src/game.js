@@ -74,6 +74,11 @@ module.exports = function(){
   , registerBody: function(body){
       publicObject.bodies.push(body)
     }
+  , unregisterBody: function(body){
+      if (publicObject.bodies.indexOf(body) !== -1) {
+        publicObject.bodies.splice(publicObject.bodies.indexOf(body), 1)
+      }
+    }
   , checkCollisions: function(body1, body2){
       if(body1.pikoId && body2.pikoId && body1.pikoId == body2.pikoId)
         if ((body1.sprite.key === 'body' && body2.sprite.key === 'member') || (body2.sprite.key === 'body' && body1.sprite.key === 'member')) {
@@ -92,6 +97,9 @@ module.exports = function(){
     }
   , addRevoluteConstraint: function(b1, p1, b2, p2){
       return game.physics.p2.createRevoluteConstraint(b1, p1, b2, p2)
+    }
+  , removeConstraint: function(c){
+      return game.physics.p2.removeConstraint(c)
     }
   }
 

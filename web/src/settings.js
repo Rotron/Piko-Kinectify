@@ -3,6 +3,7 @@ Settings = {
 , height: 600
 , isDebug: false
 , spriteScale: 300/13.8 // 21.74
+, bodyLifespan: 5000
 , piko: { // Pico settings
     bodyWidth: 6.2
   , bodyHeightFull: 8.4 // 183
