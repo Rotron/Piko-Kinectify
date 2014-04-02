@@ -30,8 +30,6 @@ module.exports = function(){
       // Gravity
       game.physics.p2.gravity.y = 200;
 
-      if(!settings.isDebug) game.add.text(0,0,'To control press: qapt - hands, zxcv - legs, rs - head',{});
-
       // Add ground
       publicObject.ground = game.add.sprite(S.width / 2, S.height - 10, 'ground')
       publicObject.enable(publicObject.ground)
@@ -102,6 +100,12 @@ module.exports = function(){
   , removeConstraint: function(c){
       return game.physics.p2.removeConstraint(c)
     }
+  , displayText: function(text){
+      if (this.text) {
+        this.text.destroy()
+      }
+      this.text = game.add.text(0, 0, text, {});
+    }
   }
 
   var game = new Phaser.Game(settings.width, settings.height, Phaser.AUTO, '', { preload: publicObject.preload, create: publicObject.create, update: publicObject.update, render: publicObject.render })
@@ -116,6 +120,8 @@ var O = require('./observer') // Singleton object. Events handling
 var Kinect = require('./kinect') // Singleton object
 var Piko = require('./piko') // Constructor object
 
+var defaultPlayer = null
+
 // Wait both for kinect and game
 var kinect_opened = false
   , game_created = false
@@ -125,9 +131,23 @@ var kinect_opened = false
       var players = {}
 
       O.add('kinect-message', function(data){
+        if (data.status) {
+          if (data.status == 'detected') {
+            Game.displayText('New player detected. Rise your hands up to calibrate!')
+          }else if (data.status == 'calibrated'){
+            Game.displayText('Player calibrated. Welcome on board')
+          }
+        }
+
         if (!data.player) return;
 
         if (!players.hasOwnProperty(data.player)) {
+          if (defaultPlayer !== null) {
+            // Kill default player
+            defaultPlayer.destroy()
+            defaultPlayer = null
+          }
+
           // Create new player
           var x = data.right_shoulder ? data.right_shoulder.x : 400
           var y = data.right_shoulder ? data.right_shoulder.y : 300
@@ -139,32 +159,52 @@ var kinect_opened = false
 
       // Check players for being alive every 5 seconds
       setInterval(function(){
+        var count = 0
+
         for(var i in players) {
           if (players.hasOwnProperty(i)) {
             if (players[i].shouldDie()) {
               console.log('Player ' + i + ' should die')
               players[i].destroy()
               delete players[i]
+            } else {
+              count += 1
             }
           }
+        }
+
+        if (count == 0) {
+          Game.displayText('Rise your hands up to calibrate!')
+          if (defaultPlayer === null)
+            defaultPlayer = new Piko(Game, -1, 400, 300)
         }
       }, Settings.bodyLifespan)
     }
 O.add('kinect-opened', function(){
+  Game.displayText('Connected to Kinect, waiting for players')
+
   kinect_opened = true
   processKinect()
 })
 O.add('game-created', function(){
+  if (!Kinect.isConnected())
+    Game.displayText('Searching for Kinect connection, wait 10 sec')
+
   game_created = true
   processKinect()
 })
 
 Kinect.connect()
+var kinectTryToConnect = setInterval(function(){
+  if(!Kinect.isConnected())
+    Kinect.connect()
+}, 10000)
 
 // Wait for 10 seconds, if kinect not found that add a Piko
 setTimeout(function(){
   if (!Kinect.isConnected()) {
-    var Player1 = new Piko(Game, 1, 400, 300)
+    defaultPlayer = new Piko(Game, -1, 400, 300)
+    Game.displayText('To control press: qapt - hands, zxcv - legs, rs - head')
     console.log('Adding autonome player')
   }
 }, 10000)
@@ -433,12 +473,12 @@ Piko.prototype.addConstraintLegRight = function(){
 Piko.prototype.hookKeyboard = function(){
   var that = this
 
-  O.add('keyboard-a', this.f.f1 = function(){that.c.handRight.rotated += that.s.rotationStep}) // down
-  O.add('keyboard-q', this.f.f2 = function(){that.c.handRight.rotated -= that.s.rotationStep}) // up
-  O.add('keyboard-r', this.f.f3 = function(){that.c.head.rotated -= that.s.rotationStep}) // left
-  O.add('keyboard-s', this.f.f4 = function(){that.c.head.rotated += that.s.rotationStep}) // right
-  O.add('keyboard-t', this.f.f5 = function(){that.c.handLeft.rotated += that.s.rotationStep}) // down
-  O.add('keyboard-p', this.f.f6 = function(){that.c.handLeft.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-q', this.f.f1 = function(){that.c.handRight.rotated += that.s.rotationStep}) // up
+  O.add('keyboard-a', this.f.f2 = function(){that.c.handRight.rotated -= that.s.rotationStep}) // down
+  O.add('keyboard-t', this.f.f3 = function(){that.c.handLeft.rotated += that.s.rotationStep}) // down
+  O.add('keyboard-p', this.f.f4 = function(){that.c.handLeft.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-s', this.f.f5 = function(){that.c.head.rotated += that.s.rotationStep}) // right
+  O.add('keyboard-r', this.f.f6 = function(){that.c.head.rotated -= that.s.rotationStep}) // left
   O.add('keyboard-z', this.f.f7 = function(){that.c.legRight.rotated += that.s.rotationStep}) // left
   O.add('keyboard-x', this.f.f8 = function(){that.c.legRight.rotated -= that.s.rotationStep}) // right
   O.add('keyboard-c', this.f.f9 = function(){that.c.legLeft.rotated += that.s.rotationStep}) // left
@@ -451,12 +491,12 @@ Piko.prototype.hookKeyboard = function(){
   })
 }
 Piko.prototype.unhookKeyboard = function(){
-  O.remove('keyboard-a', this.f.f1)
-  O.remove('keyboard-q', this.f.f2)
-  O.remove('keyboard-r', this.f.f3)
-  O.remove('keyboard-s', this.f.f4)
-  O.remove('keyboard-t', this.f.f5)
-  O.remove('keyboard-p', this.f.f6)
+  O.remove('keyboard-q', this.f.f1)
+  O.remove('keyboard-a', this.f.f2)
+  O.remove('keyboard-t', this.f.f3)
+  O.remove('keyboard-p', this.f.f4)
+  O.remove('keyboard-s', this.f.f5)
+  O.remove('keyboard-r', this.f.f6)
   O.remove('keyboard-z', this.f.f7)
   O.remove('keyboard-x', this.f.f8)
   O.remove('keyboard-c', this.f.f9)

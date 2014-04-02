@@ -197,12 +197,12 @@ Piko.prototype.addConstraintLegRight = function(){
 Piko.prototype.hookKeyboard = function(){
   var that = this
 
-  O.add('keyboard-a', this.f.f1 = function(){that.c.handRight.rotated += that.s.rotationStep}) // down
-  O.add('keyboard-q', this.f.f2 = function(){that.c.handRight.rotated -= that.s.rotationStep}) // up
-  O.add('keyboard-r', this.f.f3 = function(){that.c.head.rotated -= that.s.rotationStep}) // left
-  O.add('keyboard-s', this.f.f4 = function(){that.c.head.rotated += that.s.rotationStep}) // right
-  O.add('keyboard-t', this.f.f5 = function(){that.c.handLeft.rotated += that.s.rotationStep}) // down
-  O.add('keyboard-p', this.f.f6 = function(){that.c.handLeft.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-q', this.f.f1 = function(){that.c.handRight.rotated += that.s.rotationStep}) // up
+  O.add('keyboard-a', this.f.f2 = function(){that.c.handRight.rotated -= that.s.rotationStep}) // down
+  O.add('keyboard-t', this.f.f3 = function(){that.c.handLeft.rotated += that.s.rotationStep}) // down
+  O.add('keyboard-p', this.f.f4 = function(){that.c.handLeft.rotated -= that.s.rotationStep}) // up
+  O.add('keyboard-s', this.f.f5 = function(){that.c.head.rotated += that.s.rotationStep}) // right
+  O.add('keyboard-r', this.f.f6 = function(){that.c.head.rotated -= that.s.rotationStep}) // left
   O.add('keyboard-z', this.f.f7 = function(){that.c.legRight.rotated += that.s.rotationStep}) // left
   O.add('keyboard-x', this.f.f8 = function(){that.c.legRight.rotated -= that.s.rotationStep}) // right
   O.add('keyboard-c', this.f.f9 = function(){that.c.legLeft.rotated += that.s.rotationStep}) // left
@@ -215,12 +215,12 @@ Piko.prototype.hookKeyboard = function(){
   })
 }
 Piko.prototype.unhookKeyboard = function(){
-  O.remove('keyboard-a', this.f.f1)
-  O.remove('keyboard-q', this.f.f2)
-  O.remove('keyboard-r', this.f.f3)
-  O.remove('keyboard-s', this.f.f4)
-  O.remove('keyboard-t', this.f.f5)
-  O.remove('keyboard-p', this.f.f6)
+  O.remove('keyboard-q', this.f.f1)
+  O.remove('keyboard-a', this.f.f2)
+  O.remove('keyboard-t', this.f.f3)
+  O.remove('keyboard-p', this.f.f4)
+  O.remove('keyboard-s', this.f.f5)
+  O.remove('keyboard-r', this.f.f6)
   O.remove('keyboard-z', this.f.f7)
   O.remove('keyboard-x', this.f.f8)
   O.remove('keyboard-c', this.f.f9)

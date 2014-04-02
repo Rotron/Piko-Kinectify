@@ -29,8 +29,6 @@ module.exports = function(){
       // Gravity
       game.physics.p2.gravity.y = 200;
 
-      if(!settings.isDebug) game.add.text(0,0,'To control press: qapt - hands, zxcv - legs, rs - head',{});
-
       // Add ground
       publicObject.ground = game.add.sprite(S.width / 2, S.height - 10, 'ground')
       publicObject.enable(publicObject.ground)
@@ -100,6 +98,12 @@ module.exports = function(){
     }
   , removeConstraint: function(c){
       return game.physics.p2.removeConstraint(c)
+    }
+  , displayText: function(text){
+      if (this.text) {
+        this.text.destroy()
+      }
+      this.text = game.add.text(0, 0, text, {});
     }
   }
 

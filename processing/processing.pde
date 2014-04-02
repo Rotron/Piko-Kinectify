@@ -139,6 +139,7 @@ void drawJoint(PVector joint, int size) {
 
 void onNewUser(int userId) {
   println("start post detection");
+  socket.broadcast("{\"status\": \"detected\"}");
   kinect.startPoseDetection("Psi", userId);
 }
 
