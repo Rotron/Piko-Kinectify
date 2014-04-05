@@ -1,6 +1,6 @@
 Settings = {
-  width: 1008
-, height: 700
+  width: 800
+, height: 600
 , isDebug: false
 , spriteScale: 300/13.8 // 21.74
 , bodyLifespan: 5000

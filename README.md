@@ -23,5 +23,10 @@
 * Open web/index.html in Chrome (or Firefox)
 * Play
 
+### Demo
+* [Web standalone](http://bumbu.github.io/Piko-Kinectify/web/)
+* [Youtube Piko Kinectify](https://www.youtube.com/watch?v=CvOIyR2JgSs)
+* [Youtube Piko Kinectify 2](https://www.youtube.com/watch?v=K68MGGk0tGQ)
+
 ### ToDo
 * Add a random object on raising hands up
