@@ -1,6 +1,6 @@
 Settings = {
-  width: 800
-, height: 600
+  width: 1008
+, height: 700
 , isDebug: false
 , spriteScale: 300/13.8 // 21.74
 , bodyLifespan: 5000
@@ -20,8 +20,8 @@ Settings = {
   }
 , pikoS: { // Piko settings scaled
     center: {
-      x: 800/2
-    , y: 600/2
+      x: 1008/2
+    , y: 700/2
     }
   }
 , socket: {
